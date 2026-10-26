@@ -36,6 +36,10 @@ function init(){
     if (e.target.closest('a')) { nav.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); }
   });
 
+  /* ---------- Vídeo de portada ---------- */
+  const heroVideo = $('.hero-img video');
+  if (heroVideo && matchMedia('(prefers-reduced-motion: reduce)').matches) { heroVideo.removeAttribute('autoplay'); heroVideo.pause(); }
+
   /* ---------- Fotos ---------- */
   const alt = {}, titulosFoto = {};
   C.proyectos.forEach(p => p.fotos.forEach(f => {

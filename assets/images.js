@@ -38,5 +38,5 @@ const IMAGES = {
   "playa": "/img/playa.jpg",
   "poster": "/img/malecon-poster.jpg",
   "roiz": "/img/roiz.jpg",
-  "video": "/img/malecon-video.mp4"
+  "video": "/video/malecon.mp4"
 };
