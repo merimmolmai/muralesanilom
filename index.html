@@ -149,45 +149,79 @@
     <div class="section-head">
       <h2>Cuánto cuesta un mural</h2>
       <p class="lead">El precio depende de los metros cuadrados, de la técnica y de cuánto detalle lleva. Elige el estilo que más se parece a lo que buscas y calcula una cifra orientativa.</p>
+      <label class="sim-toggle">
+        <input type="checkbox" role="switch" id="sim-modo">
+        <span class="sim-switch" aria-hidden="true"></span>
+        <span class="sim-toggle-txt"><strong>Probar en el simulador</strong><small>Mira cómo queda el mural en una persiana o en una pared de casa</small></span>
+      </label>
     </div>
-    <form class="calc-form" id="calc-form" autocomplete="off" novalidate>
-      <fieldset>
-        <legend>Estilo</legend>
-        <div class="estilos-cuadros" id="estilos"></div>
-        <p class="notice" id="notice" role="status"></p>
-      </fieldset>
-      <div class="calc" id="calculadora">
-        <div>
-          <div class="calc-row">
-            <fieldset>
-              <legend class="small">¿Dónde va?</legend>
-              <div class="seg">
-                <label><input type="radio" name="lugar" value="exterior" checked><span>Exterior</span></label>
-                <label><input type="radio" name="lugar" value="interior"><span>Interior</span></label>
-              </div>
-            </fieldset>
-            <fieldset>
-              <legend class="small">Técnica</legend>
-              <div class="seg">
-                <label><input type="radio" name="tecnica" value="pintura" checked><span>Pintura</span></label>
-                <label><input type="radio" name="tecnica" value="spray"><span>Graffiti (spray)</span></label>
-              </div>
-            </fieldset>
-          </div>
-          <p class="hint" id="hint-tecnica" style="margin:-12px 0 28px"></p>
+    <div class="sim modo-calc" id="simulador">
+      <div class="sim-vista">
+        <div class="sim-stage" id="sim-stage"></div>
+        <div class="sim-tools" id="sim-tools" role="toolbar" aria-label="Opciones de la vista">
+          <button type="button" class="sim-tool" data-tool="comparar" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M4 6h5v12H4zM15 6h5v12h-5z" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Antes y después</span></button>
+          <button type="button" class="sim-tool" data-tool="persona" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 21v-7H6l1-6h10l1 6h-2v7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Persona</span></button>
+          <button type="button" class="sim-tool" data-tool="imagen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4-4 4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Guardar imagen</span></button>
+        </div>
+        <p class="sim-tip">Arrastra el mural para moverlo y tira de la esquina para cambiar su tamaño.</p>
+      </div>
+
+      <form class="sim-panel calc-form" id="sim-form" autocomplete="off" novalidate>
+        <nav class="sim-steps" aria-label="Pasos">
+          <button type="button" data-ir="1"><b>1</b>Dónde</button>
+          <button type="button" data-ir="2"><b>2</b>Estilo</button>
+          <button type="button" data-ir="3"><b>3</b>Tamaño</button>
+          <button type="button" data-ir="4"><b>4</b>Precio</button>
+        </nav>
+
+        <div class="sim-paso" data-paso="1">
           <fieldset>
-            <legend class="small">Medidas aproximadas</legend>
+            <legend>¿Dónde va el mural?</legend>
+            <div class="sim-escenas" id="sim-escenas"></div>
+          </fieldset>
+          <div class="sim-nav"><button type="button" class="btn" data-ir="2">Siguiente: el estilo</button></div>
+        </div>
+
+        <div class="sim-paso" data-paso="2" hidden>
+          <fieldset>
+            <legend class="small">Técnica</legend>
+            <div class="seg">
+              <label><input type="radio" name="tecnica" value="pintura" checked><span>Pintura</span></label>
+              <label><input type="radio" name="tecnica" value="spray"><span>Graffiti (spray)</span></label>
+            </div>
+            <p class="hint" id="hint-tecnica"></p>
+          </fieldset>
+          <fieldset>
+            <legend>Estilo</legend>
+            <div class="estilos-cuadros sim-estilos" id="estilos"></div>
+            <p class="notice" id="notice" role="status"></p>
+          </fieldset>
+          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="1">Atrás</button><button type="button" class="btn" data-ir="3">Siguiente: el tamaño</button></div>
+        </div>
+
+        <div class="sim-paso" data-paso="3" hidden>
+          <fieldset>
+            <legend>Tamaño del mural</legend>
+            <div class="sim-rango"><label for="sim-rango-ancho">Ancho</label><input type="range" id="sim-rango-ancho" min="0.5" max="3" step="0.1"></div>
+            <div class="sim-rango"><label for="sim-rango-alto">Alto</label><input type="range" id="sim-rango-alto" min="0.5" max="2.4" step="0.1"></div>
             <div class="medidas">
-              <div class="field"><label for="ancho">Ancho (m)</label><input type="text" id="ancho" name="ancho" inputmode="decimal" value="3"></div>
+              <div class="field"><label for="ancho">Ancho (m)</label><input type="text" id="ancho" name="ancho" inputmode="decimal"></div>
               <span class="times" aria-hidden="true">×</span>
-              <div class="field"><label for="alto">Alto (m)</label><input type="text" id="alto" name="alto" inputmode="decimal" value="2,5"></div>
+              <div class="field"><label for="alto">Alto (m)</label><input type="text" id="alto" name="alto" inputmode="decimal"></div>
               <span class="area-out" id="area-out"></span>
             </div>
+            <p class="hint"><span id="sim-max"></span> <button type="button" class="sim-link" id="sim-toda">Pintar la pared entera</button></p>
+            <p class="notice" id="sim-aviso-tam" role="status"></p>
           </fieldset>
+          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="2">Atrás</button><button type="button" class="btn" data-ir="4">Ver mi presupuesto</button></div>
         </div>
-        <aside class="calc-result" id="resultado" aria-live="polite"></aside>
-      </div>
-    </form>
+
+        <div class="sim-paso" data-paso="4" hidden>
+          <div id="resultado" aria-live="polite"></div>
+          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="1">Empezar otro diseño</button></div>
+        </div>
+      </form>
+    </div>
   </div>
 </section>
 <section class="contact-dark">
@@ -226,5 +260,6 @@
 <script src="/assets/config.js"></script>
 <script src="/assets/images.js"></script>
 <script src="/assets/app.js"></script>
+<script src="/assets/simulador.js"></script>
 </body>
 </html>

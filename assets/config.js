@@ -41,19 +41,40 @@ const CONFIG = {
 
   /* ---------- ESTILOS DE LA CALCULADORA ----------
      "usa" indica qué filas de precios se suman.
-     "ejemplo" es la foto que se enseña como ejemplo del estilo. */
+     "ejemplo" es la foto que se enseña como ejemplo del estilo.
+     "murales" son los murales que enseña el simulador para ese estilo
+     (img = recorte del mural en /img/simulador/, nombre = cómo se llama,
+     para = 'exterior' o 'interior': en la persiana sale el de exterior y en la pared de casa el de interior;
+     sin "para" vale para los dos sitios. Se enseña el primero de la lista que encaje).
+     "m2dia" = metros cuadrados que se pintan, más o menos, en un día de trabajo
+     (se usa para calcular cuántos días se tarda). */
   estilosCalculadora: [
     { id: 'logo',      nombre: 'Fondo liso + logotipo', usa: ['fondo', 'logotipo'], ejemplo: 'bienpaga',
-      desc: 'Un color liso con tu logotipo encima.' },
+      desc: 'Un color liso con tu logotipo encima.', m2dia: 8,
+      murales: [ { img: 'sim_bienpaga', nombre: 'La BienPagá', para: 'exterior' }, { img: 'sim_roiz', nombre: 'Carnicería Roiz', para: 'exterior' } ] },
     { id: 'grafico',   nombre: 'Gráfico',               usa: ['grafico'],           ejemplo: 'mapa2',
-      desc: 'Letras, formas y composiciones.' },
+      desc: 'Letras, formas y composiciones.', m2dia: 4,
+      murales: [ { img: 'sim_mapa2', nombre: 'Mapamundi', para: 'interior' }, { img: 'sim_malecon7', nombre: 'Un pedacito de Cuba', para: 'interior' } ] },
     { id: 'ilustrado', nombre: 'Ilustrado',             usa: ['ilustrado'],         ejemplo: 'cerezos',
-      desc: 'Dibujo con detalle y color.' },
+      desc: 'Dibujo con detalle y color.', m2dia: 2.5,
+      murales: [ { img: 'sim_gourmet1', nombre: 'Café y olivos', para: 'exterior' }, { img: 'sim_gourmet3', nombre: 'Viñedo', para: 'exterior' }, { img: 'sim_cerezos', nombre: 'Cerezos en flor', para: 'interior' } ] },
     { id: 'realista',  nombre: 'Realista',              usa: ['realista'],          ejemplo: 'malecon1',
-      desc: 'Retratos y escenas con volumen.' },
+      desc: 'Retratos y escenas con volumen.', m2dia: 1.5,
+      murales: [ { img: 'sim_malecon1', nombre: 'Retrato cubano' }, { img: 'sim_jaen', nombre: 'Selva con cascada', para: 'exterior' }, { img: 'sim_playa', nombre: 'Ventana a la playa', para: 'interior' } ] },
     { id: 'disney',    nombre: 'Dibujos estilo Disney', usa: ['disney'],            ejemplo: 'enanitos',
-      desc: 'Personajes de dibujos animados.' }
+      desc: 'Personajes de dibujos animados.', m2dia: 3,
+      murales: [ { img: 'sim_enanitos', nombre: 'Los siete enanitos' }, { img: 'sim_dayara', nombre: 'Kiosko Dayara', para: 'exterior' } ] }
   ],
+
+  /* El graffiti (spray) cunde más: los m²/día de arriba se multiplican por esto. */
+  rendimientoSpray: 1.3,
+
+  /* ---------- SIMULADOR ----------
+     Medidas reales (en metros) de las paredes de ejemplo del simulador. */
+  simulador: {
+    persiana: { ancho: 3, alto: 2.4 },     // la persiana de la foto local.webp (crece si el mural es más grande)
+    interior: { ancho: 3.3, alto: 2.7 }    // la pared del fondo de la foto interior.webp
+  },
 
   /* ---------- ENCUADRE DE LAS FOTOS ----------
      Qué parte de la foto se ve cuando se recorta.
