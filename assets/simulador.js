@@ -95,13 +95,21 @@ function initSimulador(){
   const nombreLugar = {exterior: 'Exterior', interior: 'Interior', cristal: 'Sobre vidrio'};
 
   /* ---------- Estado ---------- */
-  const S = {escena: 'persiana', tecnica: 'pintura', estilo: 'ilustrado', ubicacion: C.ubicaciones[0].id, ancho: nf.format(P.ancho), alto: nf.format(P.alto),
+  const S = {escena: 'persiana', tecnica: 'pintura', estilo: 'ilustrado', provincia: 'sevilla', municipio: 'Sevilla', distancia: 'cerca', ancho: nf.format(P.ancho), alto: nf.format(P.alto),
     cx: null, cy: null, persona: true, comparar: false, simulador: false};
   const esc_ = () => ESCENAS[S.escena];
   const lugar = () => esc_().lugar;
   const estiloActual = () => estilos.find(x => x.id === S.estilo);
   const muralActual = () => { const e = estiloActual(); return e.murales.find(x => !x.para || x.para === S.escena || x.para === lugar()) || e.murales[0]; };
-  const ubicacionActual = () => C.ubicaciones.find(x => x.id === S.ubicacion);
+  /* Ubicación: provincia, municipio y, si es "otro" en Granada o Sevilla, la distancia a la capital */
+  const U = C.ubicaciones, OTRO = '', OTRA = 'otra';
+  const provinciaActual = () => U.provincias.find(x => x.id === S.provincia);
+  const ubicacionActual = () => {
+    const pr = provinciaActual();
+    if (!pr) return {nombre: 'Otra provincia', plus: U.plus};
+    if (S.municipio === OTRO) return {nombre: 'Otro municipio de ' + pr.nombre, plus: pr.sinPlus.length && S.distancia === 'cerca' ? 0 : U.plus};
+    return {nombre: S.municipio + (S.municipio === pr.nombre ? ' (capital)' : ' (' + pr.nombre + ')'), plus: pr.sinPlus.includes(S.municipio) ? 0 : U.plus};
+  };
   /* Geometría actual: en la persiana depende del tamaño del mural */
   const geo = () => esc_().foto ? fotoGeo(esc_().foto)
     : persiana(Math.max(num(S.ancho) || 0, P.ancho), Math.max(num(S.alto) || 0, P.alto));
@@ -359,7 +367,6 @@ function initSimulador(){
     });
     $('#hint-tecnica').textContent = {interior: 'En interior pinto siempre con pintura.', cristal: 'En cristales pinto siempre con pintura.'}[lugar()]
       || (sinSpray() ? 'El estilo «' + estiloActual().nombre + '» se pinta siempre con pintura.' : 'El graffiti (spray) solo se usa en exteriores.');
-    $$('input[name=ubicacion]').forEach(r => r.checked = r.value === S.ubicacion);
     $$('.sq', contEstilos).forEach(lab => {
       const e = estilos.find(x => x.id === lab.dataset.id);
       $('input', lab).checked = S.estilo === e.id;
@@ -369,14 +376,30 @@ function initSimulador(){
   };
 
   /* ---------- Paso 3: ubicación ---------- */
-  const contUbic = $('#ubicaciones');
-  C.ubicaciones.forEach(u => {
-    const lab = document.createElement('label');
-    lab.innerHTML = '<input type="radio" name="ubicacion"><span></span>';
-    $('input', lab).value = u.id;
-    $('span', lab).textContent = u.nombre;
-    contUbic.appendChild(lab);
-  });
+  const selProv = $('#sim-prov'), selMuni = $('#sim-muni');
+  const opcion = (sel, valor, texto) => { const o = document.createElement('option'); o.value = valor; o.textContent = texto; sel.appendChild(o); };
+  U.provincias.forEach(pr => opcion(selProv, pr.id, pr.nombre));
+  opcion(selProv, OTRA, 'Otra provincia');
+  /* Municipios de la provincia: la capital primero, luego por orden alfabético y al final "Otro municipio" */
+  const pintarMunicipios = () => {
+    const pr = provinciaActual();
+    selMuni.innerHTML = '';
+    $('#sim-muni-f').hidden = !pr;
+    if (pr) {
+      const resto = pr.sinPlus.concat(pr.conPlus).filter(n => n !== pr.nombre).sort((a, b) => a.localeCompare(b, 'es'));
+      [pr.nombre].concat(resto).forEach(n => opcion(selMuni, n, n === pr.nombre ? pr.nombre + ' (capital)' : n));
+      opcion(selMuni, OTRO, 'Otro municipio');
+    }
+    pintarUbicacion();
+  };
+  const pintarUbicacion = () => {
+    const pr = provinciaActual();
+    selProv.value = S.provincia;
+    if (pr) selMuni.value = S.municipio;
+    $('#sim-dist').value = S.distancia;
+    $('#sim-dist-f').hidden = !(pr && S.municipio === OTRO && pr.sinPlus.length);
+  };
+  pintarMunicipios();
 
   /* ---------- Medidas ---------- */
   const pintarMedidas = () => {
@@ -414,18 +437,11 @@ function initSimulador(){
     if (alto > PR.altura.desde) { sin += PR.altura.sinMateriales; con += PR.altura.conMateriales; }
     const plus = ubicacionActual().plus;
     sin += plus; con += plus;
-    const dias = area / (e.m2dia * (S.tecnica === 'spray' ? C.rendimientoSpray : 1));
-    return {ok:true, ancho, alto, area, e, sin, con, dias, descuento};
-  };
-  const textoDias = d => {
-    if (d <= .6) return 'Menos de un día';
-    if (d <= 1.2) return 'Más o menos un día';
-    const a = Math.max(1, Math.floor(d * .85)), b = Math.ceil(d * 1.2);
-    return 'Unos ' + (a === b ? a : a + '–' + b) + ' días';
+    return {ok:true, ancho, alto, area, e, sin, con, descuento};
   };
   const codigo = () => {
     let h = 0;
-    for (const ch of [S.escena, S.estilo, S.ancho, S.alto, S.tecnica, S.ubicacion].join('|')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    for (const ch of [S.escena, S.estilo, S.ancho, S.alto, S.tecnica, S.provincia, S.municipio].join('|')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     return 'MA-' + (h % 46656).toString(36).toUpperCase().padStart(3, '0');
   };
 
@@ -462,7 +478,6 @@ function initSimulador(){
           '<div><dt>Técnica</dt><dd>' + nombreTec[S.tecnica] + '</dd></div>' +
           '<div><dt>Medidas</dt><dd>' + nf.format(r.ancho) + ' × ' + nf.format(r.alto) + ' m = ' + nf.format(round2(r.area)) + ' m²</dd></div>' +
           '<div><dt>Ubicación</dt><dd>' + ubic + '</dd></div>' +
-          '<div><dt>Trabajo</dt><dd>' + textoDias(r.dias) + '</dd></div>' +
         '</dl>' +
         '<div class="t-tot"><div><span>Sin materiales</span><strong>' + eur(r.sin) + '</strong></div><div><span>Con materiales</span><strong>' + eur(r.con) + '</strong></div></div>' +
         '<p class="iva">IVA no incluido. Cifra orientativa y no vinculante.</p>' +
@@ -596,7 +611,14 @@ function initSimulador(){
       reglas(); montarEscena(); pintarControles(); pintarMedidas(); colocar(true);
     } else if (n === 'tecnica' || n === 'estilo') {
       S[n] = t.value; reglas(); pintarControles(); colocar(true);
-    } else if (n === 'ubicacion') S.ubicacion = t.value;
+    } else if (n === 'provincia') {
+      S.provincia = t.value;
+      const pr = provinciaActual();
+      S.municipio = pr ? pr.nombre : OTRO;
+      pintarMunicipios();
+    } else if (n === 'municipio' || n === 'distancia') {
+      S[n] = t.value; pintarUbicacion();
+    }
     pintarResultado();
   });
   form.addEventListener('input', ev => {

@@ -209,7 +209,12 @@
           <p class="sim-paso-n">Paso 3 de 3</p>
           <fieldset>
             <legend>Ubicación</legend>
-            <div class="sim-ubic" id="ubicaciones"></div>
+            <div class="sim-ubic">
+              <div class="field"><label for="sim-prov">Provincia</label><select id="sim-prov" name="provincia"></select></div>
+              <div class="field" id="sim-muni-f"><label for="sim-muni">Municipio</label><select id="sim-muni" name="municipio"></select></div>
+              <div class="field" id="sim-dist-f" hidden><label for="sim-dist">¿A qué distancia está de la capital?</label>
+                <select id="sim-dist" name="distancia"><option value="cerca">A menos de 50 km</option><option value="lejos">A más de 50 km</option></select></div>
+            </div>
           </fieldset>
         </div>
 
@@ -228,7 +233,7 @@
 
       <aside class="sim-res" aria-label="Tu presupuesto">
         <div id="resultado" aria-live="polite"></div>
-        <p class="fine">Para darte un presupuesto cerrado necesito fotos, estado de la pared, las medidas exactas y el municipio de realización. El tiempo de trabajo es aproximado.</p>
+        <p class="fine">Para darte un presupuesto cerrado necesito fotos, estado de la pared, las medidas exactas y el municipio de realización.</p>
         <button type="button" class="btn btn-ghost sim-res-btn" id="sim-res-btn">Ver cómo queda en el simulador</button>
       </aside>
     </div>

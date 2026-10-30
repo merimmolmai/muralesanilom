@@ -30,15 +30,40 @@ const CONFIG = {
   },
 
   /* ---------- UBICACIÓN ----------
-     plus = lo que se suma al precio por desplazamiento (no se enseña en el selector, solo va dentro del precio final). */
-  ubicaciones: [
-    { id: 'sevilla',  nombre: 'Sevilla capital', plus: 0 },
-    { id: 'granada',  nombre: 'Granada capital', plus: 0 },
-    { id: 'cerca',    nombre: 'Un pueblo a menos de 50 km de Sevilla o Granada', plus: 0 },
-    { id: 'jaen',     nombre: 'Jaén', plus: 30 },
-    { id: 'malaga',   nombre: 'Málaga', plus: 30 },
-    { id: 'lejos',    nombre: 'Un pueblo a más de 50 km de Sevilla o Granada', plus: 30 }
-  ],
+     plus = lo que se suma al precio por desplazamiento (no se enseña en el selector, solo va dentro del precio final).
+     Por provincia:
+       sinPlus = municipios sin desplazamiento (la capital y los pueblos a menos de 50 km de Sevilla o Granada)
+       conPlus = municipios con desplazamiento (pueblos a más de 50 km, y toda Jaén y Málaga)
+     El primero de "sinPlus" o "conPlus" que coincida con el nombre de la provincia es la capital y sale el primero.
+     Si eligen "Otro municipio" en Granada o Sevilla, se pregunta si está a más o menos de 50 km.
+     "Otra provincia" lleva siempre el plus. */
+  ubicaciones: {
+    plus: 30,
+    provincias: [
+      { id: 'granada', nombre: 'Granada',
+        sinPlus: ['Granada', 'Albolote', 'Alfacar', 'Alhendín', 'Armilla', 'Atarfe', 'Cájar', 'Cenes de la Vega', 'Chauchina', 'Churriana de la Vega',
+          'Cijuela', 'Cúllar Vega', 'Dúrcal', 'Escúzar', 'Fuente Vaqueros', 'Gójar', 'Güéjar Sierra', 'Huétor Santillán', 'Huétor Tájar', 'Huétor Vega',
+          'Íllora', 'Iznalloz', 'Jun', 'La Malahá', 'La Zubia', 'Láchar', 'Lanjarón', 'Las Gabias', 'Lecrín', 'Maracena', 'Moclín', 'Monachil',
+          'Nigüelas', 'Ogíjares', 'Otura', 'Padul', 'Peligros', 'Pinos Genil', 'Pinos Puente', 'Pulianas', 'Quéntar', 'Santa Fe', 'Valderrubio',
+          'Vegas del Genil', 'Ventas de Huelma', 'Víznar'],
+        conPlus: ['Albuñol', 'Alhama de Granada', 'Almuñécar', 'Baza', 'Castell de Ferro', 'Cúllar', 'Guadix', 'Huéscar', 'La Herradura', 'Loja',
+          'Montefrío', 'Motril', 'Órgiva', 'Pampaneira', 'Salobreña', 'Trevélez', 'Ugíjar'] },
+      { id: 'sevilla', nombre: 'Sevilla',
+        sinPlus: ['Sevilla', 'Alcalá de Guadaíra', 'Alcalá del Río', 'Arahal', 'Aznalcázar', 'Aznalcóllar', 'Benacazón', 'Bollullos de la Mitación',
+          'Bormujos', 'Brenes', 'Camas', 'Cantillana', 'Carmona', 'Castilleja de la Cuesta', 'Coria del Río', 'Dos Hermanas', 'El Viso del Alcor',
+          'Espartinas', 'Gelves', 'Gerena', 'Gines', 'Guillena', 'La Algaba', 'La Puebla del Río', 'La Rinconada', 'Los Palacios y Villafranca',
+          'Mairena del Alcor', 'Mairena del Aljarafe', 'Olivares', 'Palomares del Río', 'Pilas', 'Salteras', 'San Juan de Aznalfarache',
+          'Sanlúcar la Mayor', 'Santiponce', 'Tomares', 'Umbrete', 'Utrera', 'Valencina de la Concepción', 'Villamanrique de la Condesa'],
+        conPlus: ['Cazalla de la Sierra', 'Constantina', 'Écija', 'El Coronil', 'Estepa', 'Fuentes de Andalucía', 'Lebrija', 'Lora del Río',
+          'Marchena', 'Morón de la Frontera', 'Osuna', 'Paradas', 'Puebla de Cazalla'] },
+      { id: 'jaen', nombre: 'Jaén', sinPlus: [],
+        conPlus: ['Jaén', 'Alcalá la Real', 'Alcaudete', 'Andújar', 'Baeza', 'Bailén', 'Cazorla', 'Huelma', 'Jódar', 'La Carolina', 'Linares',
+          'Mancha Real', 'Martos', 'Mengíbar', 'Porcuna', 'Torredelcampo', 'Torredonjimeno', 'Úbeda', 'Villacarrillo'] },
+      { id: 'malaga', nombre: 'Málaga', sinPlus: [],
+        conPlus: ['Málaga', 'Alhaurín de la Torre', 'Alhaurín el Grande', 'Álora', 'Antequera', 'Archidona', 'Benalmádena', 'Cártama', 'Coín',
+          'Estepona', 'Fuengirola', 'Manilva', 'Marbella', 'Mijas', 'Nerja', 'Rincón de la Victoria', 'Ronda', 'Torremolinos', 'Torrox', 'Vélez-Málaga'] }
+    ]
+  },
 
   /* ---------- PRECIOS POR m² SIN MATERIALES (sin IVA) ----------
      null = esa técnica no está disponible para ese estilo
@@ -60,31 +85,27 @@ const CONFIG = {
      (img = recorte del mural en /img/simulador/, nombre = cómo se llama,
      para = dónde se enseña: 'persiana', 'exterior' (persiana y pared exterior), 'interior' o 'cristal';
      sin "para" vale para todos los sitios. Se enseña el primero de la lista que encaje).
-     "m2dia" = metros cuadrados que se pintan, más o menos, en un día de trabajo
-     (se usa para calcular cuántos días se tarda). */
+     */
   estilosCalculadora: [
     { id: 'logo',      nombre: 'Fondo liso + logotipo', usa: ['fondo', 'logotipo'], ejemplo: 'bienpaga',
-      desc: 'Un color liso con tu logotipo encima.', m2dia: 8,
+      desc: 'Un color liso con tu logotipo encima.',
       murales: [ { img: 'sim_bienpaga', nombre: 'La BienPagá', para: 'exterior' }, { img: 'sim_roiz', nombre: 'Carnicería Roiz', para: 'exterior' } ] },
     { id: 'grafico',   nombre: 'Gráfico',               usa: ['grafico'],           ejemplo: 'mapa2',
-      desc: 'Letras, formas y composiciones.', m2dia: 4,
+      desc: 'Letras, formas y composiciones.',
       murales: [ { img: 'sim_mapa2', nombre: 'Mapamundi', para: 'interior' }, { img: 'sim_malecon7', nombre: 'Un pedacito de Cuba', para: 'interior' } ] },
     { id: 'ilustrado', nombre: 'Ilustrado',             usa: ['ilustrado'],         ejemplo: 'cerezos',
-      desc: 'Dibujo con detalle y color.', m2dia: 2.5,
+      desc: 'Dibujo con detalle y color.',
       murales: [ { img: 'sim_cerezos', nombre: 'Cerezos en flor', para: 'interior' }, { img: 'sim_gourmet2', nombre: 'Gourmet Sevilla: el vino', para: 'persiana' }, { img: 'sim_gourmet1', nombre: 'Café y olivos', para: 'exterior' } ] },
     { id: 'realista',  nombre: 'Realista',              usa: ['realista'],          ejemplo: 'malecon1',
-      desc: 'Retratos y escenas con volumen.', m2dia: 1.5,
+      desc: 'Retratos y escenas con volumen.',
       murales: [ { img: 'sim_malecon1', nombre: 'Retrato cubano' }, { img: 'sim_jaen', nombre: 'Selva con cascada', para: 'exterior' }, { img: 'sim_playa', nombre: 'Ventana a la playa', para: 'interior' } ] },
     { id: 'disney',    nombre: 'Dibujos estilo Disney', usa: ['disney'],            ejemplo: 'enanitos',
-      desc: 'Personajes de dibujos animados.', m2dia: 3,
+      desc: 'Personajes de dibujos animados.',
       murales: [ { img: 'sim_enanitos', nombre: 'Los siete enanitos' }, { img: 'sim_dayara', nombre: 'Kiosko Dayara', para: 'exterior' } ] },
     { id: 'cristal',   nombre: 'Pintura en cristal',    usa: ['cristal'],           ejemplo: 'cristal_navidad',
-      desc: 'Dibujos pintados sobre vidrio.', m2dia: 4,
+      desc: 'Dibujos pintados sobre vidrio.',
       murales: [ { img: 'sim_cristal_navidad', nombre: 'Escaparate de Navidad' } ] }
   ],
-
-  /* El graffiti (spray) cunde más: los m²/día de arriba se multiplican por esto. */
-  rendimientoSpray: 1.3,
 
   /* ---------- SIMULADOR ----------
      Medidas reales (en metros) de las paredes de ejemplo del simulador. */

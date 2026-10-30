@@ -317,12 +317,12 @@ main{position:relative;isolation:isolate}
 .sim-escenas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 @media (max-width:520px){.sim-escenas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Ubicación: botones redondeados, uno por sitio */
-.sim-ubic{display:flex;flex-wrap:wrap;gap:8px}
-.sim-ubic label{position:relative}
-.sim-ubic input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
-.sim-ubic span{display:block;padding:.45em 1.05em;border:1.5px solid var(--line-strong);border-radius:999px;background:var(--panel);font-size:.93rem;line-height:1.3;color:var(--text)}
-.sim-ubic input:checked+span{background:var(--btn-bg);border-color:var(--btn-bg);color:var(--btn-fg)}
-.sim-ubic input:focus-visible+span{outline:2px solid var(--accent-deep);outline-offset:2px}
+/* Ubicación: desplegables de provincia y municipio */
+.sim-ubic{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.sim-ubic #sim-dist-f{grid-column:1 / -1;max-width:calc(50% - 8px)}
+.sim-ubic select{font:inherit;color:var(--ink);background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%234d4d4d' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right .9em center;border:1.5px solid var(--line-strong);border-radius:4px;padding:.65em 2.4em .65em .85em;width:100%;min-width:0;-webkit-appearance:none;appearance:none;cursor:pointer}
+.sim-ubic select:focus-visible{outline:2px solid var(--accent-deep);outline-offset:2px}
+@media (max-width:560px){.sim-ubic{grid-template-columns:minmax(0,1fr)}.sim-ubic #sim-dist-f{max-width:none}}
 .sim-escena{position:relative;display:flex;flex-direction:column;cursor:pointer}
 .sim-escena input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
 .se-img{display:grid;place-items:center;aspect-ratio:4/3;border-radius:3px;overflow:hidden;background:var(--bg-alt);color:var(--accent-deep);transition:box-shadow .15s}
