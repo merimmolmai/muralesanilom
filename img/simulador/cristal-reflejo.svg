@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="632" height="422" viewBox="0 0 632 422">
+  <!-- reflejos del cristal: van por delante del mural para que parezca pintado sobre el vidrio -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset=".45" stop-color="#fff" stop-opacity=".03"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".12"/>
+    </linearGradient>
+  </defs>
+  <rect width="632" height="422" fill="url(#b)"/>
+  <path d="M60 0h70L0 190v-100zM190 0h28L0 318v-40zM470 422h80L632 300v120z" fill="#fff" opacity=".14"/>
+</svg>

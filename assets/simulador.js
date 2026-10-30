@@ -18,15 +18,16 @@ function initSimulador(){
   const nombreTec = {pintura:'Pintura', spray:'Graffiti (spray)'};
   const estilos = C.estilosCalculadora;
 
+  const PR = C.presupuesto;
+  /* Precio por m² sin materiales de un estilo con una técnica (null si no se hace) */
   const tarifa = (e, t) => {
-    let m2 = 0, mat = 0, plantilla = false;
+    let m2 = 0;
     for (const k of e.usa) {
       const p = C.precios[k][t];
-      if (!p) return null;
-      m2 += p.m2;
-      if (p.mat == null) { mat += p.m2; plantilla = true; } else mat += p.mat;
+      if (p == null) return null;
+      m2 += p;
     }
-    return {m2, mat, plantilla};
+    return m2;
   };
 
   /* ---------- Escenas (todas las medidas en metros) ---------- */
@@ -46,55 +47,77 @@ function initSimulador(){
     };
   };
 
-  /* Pared de interior (interior.webp, 1024 × 1020). La pared va de x 82 a 962 y de y 116 a 850.
-     Lo que está delante de la pared (sofá, lámpara, mesa...) se vuelve a dibujar encima del mural. */
-  const I = {ancho: sp.interior.ancho, alto: sp.interior.alto};
-  const ikx = 880 / I.ancho, iky = 734 / I.alto;
-  const INTERIOR_FRENTE = [
-    '133,735 137,720 150,713 200,713 200,668 320,663 800,663 830,668 830,713 878,713 890,722 893,735 893,1020 133,1020',
-    '900,512 1019,512 1019,587 975,587 992,850 920,850 938,587 900,587',
-    '958,680 1022,680 1022,1020 895,1020 895,735 958,735',
-    '36,728 138,728 138,1020 36,1020',
-    '0,760 45,760 52,790 160,785 160,1020 0,1020',
-    '865,815 1024,800 1024,1020 865,1020',
-    '318,835 706,835 706,1020 318,1020'
-  ];
-  const PLANTA = {x: 0, y: 380, w: 230, h: 400};   // recorte de la planta, en píxeles de interior.webp
-  const salon = () => ({
-    W: 1024 / ikx, H: 1020 / iky, pared: {x: 82 / ikx, y: 116 / iky, w: I.ancho, h: I.alto},
-    persona: {x: 870 / ikx, suelo: 850 / iky}
-  });
-
-  const ESCENAS = {
-    persiana: {nombre: 'Persiana de local', lugar: 'exterior', img: IMG.sim_local, tamano: [P.ancho, P.alto], crece: true,
-      tex: 'grayscale(1) contrast(1.7) brightness(1.3)', texOp: .55},
-    interior: {nombre: 'Pared de interior', lugar: 'interior', img: IMG.sim_interior, tamano: [2.2, 1.3], centro: [I.ancho / 2, 1.34],
-      tex: 'grayscale(1) contrast(1.15) brightness(1.55)', texOp: .5}
+  /* Escenas hechas con una foto: medidas de la foto en píxeles, dónde está la pared y cuánto mide de verdad.
+     Lo que está delante de la pared se vuelve a dibujar encima del mural: con polígonos sobre la propia foto
+     y con recortes (plantas, árboles...) que ya tienen el fondo transparente. */
+  const FOTOS = {
+    interior: {   // interior.webp: la pared va de x 82 a 962 y de y 116 a 850
+      img: IMG.sim_interior, w: 1024, h: 1020, pared: [82, 116, 962, 850], ancho: sp.interior.ancho, alto: sp.interior.alto, persona: [870, 850],
+      poligonos: [
+        '133,735 137,720 150,713 200,713 200,668 320,663 800,663 830,668 830,713 878,713 890,722 893,735 893,1020 133,1020',
+        '900,512 1019,512 1019,587 975,587 992,850 920,850 938,587 900,587',
+        '958,680 1022,680 1022,1020 895,1020 895,735 958,735',
+        '36,728 138,728 138,1020 36,1020',
+        '0,760 45,760 52,790 160,785 160,1020 0,1020',
+        '865,815 1024,800 1024,1020 865,1020',
+        '318,835 706,835 706,1020 318,1020'
+      ],
+      recortes: [{img: IMG.sim_interior_planta, x: 0, y: 380, w: 230, h: 400}]
+    },
+    exterior: {   // pared-exterior.webp: la pared va de x 160 a 1024 y de y 0 a 960 (la puerta de 2,2 m sirve de medida)
+      img: IMG.sim_exterior, w: 1024, h: 1236, pared: [160, 0, 1024, 960], ancho: sp.exterior.ancho, alto: sp.exterior.alto, persona: [250, 1020],
+      poligonos: [],
+      recortes: [{img: IMG.sim_exterior_arbol, x: 840, y: 0, w: 184, h: 600}, {img: IMG.sim_exterior_setos, x: 160, y: 820, w: 864, h: 220}]
+    },
+    cristal: {    // cristal.svg: el cristal del escaparate va de x 104 a 736 y de y 194 a 616; los reflejos van por delante
+      img: IMG.sim_cristal, w: 1024, h: 760, pared: [104, 194, 736, 616], ancho: sp.cristal.ancho, alto: sp.cristal.alto, persona: [880, 700],
+      poligonos: [],
+      recortes: [{img: IMG.sim_cristal_reflejo, x: 104, y: 194, w: 632, h: 422}]
+    }
+  };
+  const fotoGeo = f => {
+    const kx = (f.pared[2] - f.pared[0]) / f.ancho, ky = (f.pared[3] - f.pared[1]) / f.alto;
+    return {W: f.w / kx, H: f.h / ky, pared: {x: f.pared[0] / kx, y: f.pared[1] / ky, w: f.ancho, h: f.alto}, persona: {x: f.persona[0] / kx, suelo: f.persona[1] / ky}};
   };
 
+  const ESCENAS = {
+    /* ajuste: 'cubrir' = el mural llena el hueco (persiana); 'entero' = el mural se ve completo, con un fondo
+       pintado alrededor y los bordes difuminados, sea cual sea la proporción del hueco */
+    persiana: {nombre: 'Persiana de local', lugar: 'exterior', img: IMG.sim_local, tamano: [P.ancho, P.alto], crece: true, ajuste: 'cubrir',
+      tex: 'grayscale(1) contrast(1.7) brightness(1.3)', texOp: .55},
+    exterior: {nombre: 'Pared exterior', lugar: 'exterior', img: IMG.sim_exterior, foto: FOTOS.exterior, tamano: [3, 2], centro: [2.1, 3.15], ajuste: 'entero',
+      tex: 'grayscale(1) contrast(1.2) brightness(1.45)', texOp: .55},
+    interior: {nombre: 'Pared de interior', lugar: 'interior', img: IMG.sim_interior, foto: FOTOS.interior, tamano: [1.6, 2.2], centro: [sp.interior.ancho / 2, 1.3], ajuste: 'entero',
+      tex: 'grayscale(1) contrast(1.15) brightness(1.55)', texOp: .5},
+    cristal: {nombre: 'Cristales', lugar: 'cristal', img: IMG.sim_cristal, foto: FOTOS.cristal, tamano: [2, 1.5], centro: [sp.cristal.ancho / 2, sp.cristal.alto / 2], ajuste: 'entero',
+      tex: 'grayscale(1) brightness(2)', texOp: .1}
+  };
+  const nombreLugar = {exterior: 'Exterior', interior: 'Interior', cristal: 'Sobre vidrio'};
+
   /* ---------- Estado ---------- */
-  const S = {escena: 'persiana', tecnica: 'pintura', estilo: 'ilustrado', ancho: nf.format(P.ancho), alto: nf.format(P.alto),
+  const S = {escena: 'persiana', tecnica: 'pintura', estilo: 'ilustrado', ubicacion: C.ubicaciones[0].id, ancho: nf.format(P.ancho), alto: nf.format(P.alto),
     cx: null, cy: null, persona: true, comparar: false, simulador: false};
   const esc_ = () => ESCENAS[S.escena];
   const lugar = () => esc_().lugar;
   const estiloActual = () => estilos.find(x => x.id === S.estilo);
-  const muralActual = () => { const e = estiloActual(); return e.murales.find(x => !x.para || x.para === lugar()) || e.murales[0]; };
+  const muralActual = () => { const e = estiloActual(); return e.murales.find(x => !x.para || x.para === S.escena || x.para === lugar()) || e.murales[0]; };
+  const ubicacionActual = () => C.ubicaciones.find(x => x.id === S.ubicacion);
   /* Geometría actual: en la persiana depende del tamaño del mural */
-  const geo = () => S.escena === 'interior' ? salon()
+  const geo = () => esc_().foto ? fotoGeo(esc_().foto)
     : persiana(Math.max(num(S.ancho) || 0, P.ancho), Math.max(num(S.alto) || 0, P.alto));
 
   /* ---------- Vista ---------- */
   const stage = $('#sim-stage');
   stage.innerHTML =
     '<div class="sim-l sim-fondo"></div>' +
-    '<div class="sim-l sim-capa"><div class="sim-mural"><img class="sim-boceto" alt=""><img class="sim-color" alt=""><div class="sim-tex"></div></div></div>' +
+    '<div class="sim-l sim-capa"><div class="sim-mural"><div class="sim-relleno"></div><div class="sim-dentro"><img class="sim-boceto" alt=""><img class="sim-color" alt=""></div><div class="sim-tex"></div></div></div>' +
     '<div class="sim-l sim-frente"></div>' +
     '<div class="sim-persona" title="Persona de 1,70 m"><img src="' + IMG.sim_persona + '" alt=""><span>1,70 m</span></div>' +
     '<div class="sim-guia" tabindex="0" aria-label="Mural: arrástralo para moverlo. Con las flechas también se mueve."><span class="sim-cota sim-cota-w"></span><span class="sim-cota sim-cota-h"></span><span class="sim-asa" aria-hidden="true"></span></div>' +
     '<label class="sim-corte"><span class="sr">Comparar antes y después</span><input type="range" min="0" max="100" value="50"><b>Antes</b><b>Después</b></label>' +
     '<button type="button" class="sim-chip"></button>';
   const el = {
-    fondo: $('.sim-fondo', stage), capa: $('.sim-capa', stage), mural: $('.sim-mural', stage), boceto: $('.sim-boceto', stage),
+    fondo: $('.sim-fondo', stage), capa: $('.sim-capa', stage), mural: $('.sim-mural', stage), relleno: $('.sim-relleno', stage), dentro: $('.sim-dentro', stage), boceto: $('.sim-boceto', stage),
     color: $('.sim-color', stage), tex: $('.sim-tex', stage), frente: $('.sim-frente', stage),
     persona: $('.sim-persona', stage), guia: $('.sim-guia', stage), corte: $('.sim-corte input', stage), chip: $('.sim-chip', stage)
   };
@@ -114,11 +137,13 @@ function initSimulador(){
   const montarEscena = () => {
     const id = S.escena;
     stage.dataset.escena = id;
-    el.frente.innerHTML = id === 'interior'
-      ? '<svg viewBox="0 0 1024 1020" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="sim-recorte">' +
-        INTERIOR_FRENTE.map(p => '<polygon points="' + p + '"/>').join('') + '</clipPath></defs>' +
-        '<image href="' + IMG.sim_interior + '" width="1024" height="1020" preserveAspectRatio="none" clip-path="url(#sim-recorte)"/>' +
-        '<image href="' + IMG.sim_interior_planta + '" x="' + PLANTA.x + '" y="' + PLANTA.y + '" width="' + PLANTA.w + '" height="' + PLANTA.h + '" preserveAspectRatio="none"/></svg>'
+    stage.dataset.ajuste = esc_().ajuste;
+    const f = esc_().foto;
+    el.frente.innerHTML = f
+      ? '<svg viewBox="0 0 ' + f.w + ' ' + f.h + '" preserveAspectRatio="none" aria-hidden="true">' +
+        (f.poligonos.length ? '<defs><clipPath id="sim-recorte">' + f.poligonos.map(p => '<polygon points="' + p + '"/>').join('') + '</clipPath></defs>' +
+          '<image href="' + f.img + '" width="' + f.w + '" height="' + f.h + '" preserveAspectRatio="none" clip-path="url(#sim-recorte)"/>' : '') +
+        f.recortes.map(c => '<image href="' + c.img + '" x="' + c.x + '" y="' + c.y + '" width="' + c.w + '" height="' + c.h + '" preserveAspectRatio="none"/>').join('') + '</svg>'
       : '';
     el.tex.style.filter = esc_().tex;
     el.tex.style.opacity = esc_().texOp;
@@ -167,7 +192,28 @@ function initSimulador(){
       el.boceto.alt = 'Mural «' + muralActual().nombre + '» de Murales Anilom';
       if (animar) pintar();
     }
+    // mural entero: la imagen completa, centrada en el hueco
+    const d = esc_().ajuste === 'entero' && dentro(r, el.color);
+    Object.assign(el.dentro.style, d ? {left: d.x / r.w * 100 + '%', top: d.y / r.h * 100 + '%', width: d.w / r.w * 100 + '%', height: d.h / r.h * 100 + '%'}
+      : {left: '0', top: '0', width: '100%', height: '100%'});
   };
+  /* Hueco que ocupa la imagen completa del mural dentro del rectángulo r (misma unidad que r) */
+  const dentro = (r, img) => {
+    if (!img.naturalWidth) return null;
+    const a = img.naturalWidth / img.naturalHeight;
+    const w = Math.min(r.w, r.h * a), h = w / a;
+    return {x: (r.w - w) / 2, y: (r.h - h) / 2, w, h};
+  };
+  /* Color medio del mural: se usa como fondo pintado alrededor cuando el mural se ve entero */
+  const colorMedio = img => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 1;
+    const x = cv.getContext('2d');
+    x.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  };
+  el.color.addEventListener('load', () => { el.relleno.style.backgroundColor = colorMedio(el.color); colocar(); });
 
   /* El mural se "pinta" con un barrido al elegir otro estilo */
   const pintar = () => {
@@ -234,7 +280,7 @@ function initSimulador(){
     pintarTools();
   });
   el.corte.addEventListener('input', () => { stage.style.setProperty('--corte', el.corte.value + '%'); recortarCapa(); });
-  el.chip.addEventListener('click', () => irPaso(4));
+  el.chip.addEventListener('click', () => $('#resultado').scrollIntoView({block: 'nearest', behavior: sinMovimiento ? 'auto' : 'smooth'}));
 
   /* ---------- Calculadora o simulador ---------- */
   const modo = $('#sim-modo', document);
@@ -243,38 +289,49 @@ function initSimulador(){
     modo.checked = sim;
     root.classList.toggle('modo-calc', !sim);
     pintarMedidas();
-    irPaso(sim ? 1 : 4);
+    pintarResultado();
     if (sim) { colocar(); pintar(); }
   };
   modo.addEventListener('change', () => ponerModo(modo.checked));
 
   /* ---------- Pasos ---------- */
+  const PASOS = 3, siguiente = {1: 'Siguiente: Tamaño', 2: 'Siguiente: Ubicación', 3: 'Enviar mi presupuesto'};
+  let paso = 1;
   const irPaso = n => {
-    $$('.sim-paso').forEach(p => p.hidden = S.simulador && +p.dataset.paso !== n);
+    paso = n;
+    $$('.sim-paso').forEach(p => p.hidden = +p.dataset.paso !== n);
     $$('.sim-steps button').forEach(b => {
       const actual = +b.dataset.ir === n;
       b.classList.toggle('actual', actual);
       b.classList.toggle('hecho', +b.dataset.ir < n);
       if (actual) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
     });
-    if (n === 4) pintarResultado();
+    $('#sim-ant').disabled = n === 1;
+    $('#sim-sig').textContent = siguiente[n];
   };
-  root.addEventListener('click', ev => {
-    const b = ev.target.closest('[data-ir]');
-    if (b) { irPaso(+b.dataset.ir); if (b.closest('.sim-paso')) $('.sim-steps').scrollIntoView({block: 'nearest', behavior: sinMovimiento ? 'auto' : 'smooth'}); }
+  const cambiarPaso = n => { irPaso(n); $('.sim-steps').scrollIntoView({block: 'nearest', behavior: sinMovimiento ? 'auto' : 'smooth'}); };
+  root.addEventListener('click', ev => { const b = ev.target.closest('[data-ir]'); if (b) irPaso(+b.dataset.ir); });
+  $('#sim-ant').addEventListener('click', () => cambiarPaso(Math.max(1, paso - 1)));
+  $('#sim-sig').addEventListener('click', () => {
+    if (paso < PASOS) cambiarPaso(paso + 1);
+    else { const d = $('#sim-enviar', document); if (d.showModal) d.showModal(); else d.setAttribute('open', ''); }
+  });
+  $('#sim-res-btn').addEventListener('click', ev => {
+    if (S.simulador) compartirImagen(ev.currentTarget);
+    else { ponerModo(true); root.scrollIntoView({behavior: sinMovimiento ? 'auto' : 'smooth'}); }
   });
 
-  /* ---------- Paso 1: dónde ---------- */
+  /* ---------- Paso 2: tamaño y localización ---------- */
   const contEscenas = $('#sim-escenas');
   Object.keys(ESCENAS).forEach(id => {
     const e = ESCENAS[id];
     const lab = document.createElement('label');
     lab.className = 'sim-escena';
-    lab.innerHTML = '<input type="radio" name="escena" value="' + id + '"><span class="se-img"><img src="' + e.img + '" alt="" loading="lazy" decoding="async"></span><strong>' + e.nombre + '</strong><small>' + (e.lugar === 'interior' ? 'Interior' : 'Exterior') + '</small>';
+    lab.innerHTML = '<input type="radio" name="escena" value="' + id + '"><span class="se-img"><img src="' + e.img + '" alt="" loading="lazy" decoding="async"></span><strong>' + e.nombre + '</strong><small>' + nombreLugar[e.lugar] + '</small>';
     contEscenas.appendChild(lab);
   });
 
-  /* ---------- Paso 2: estilo ---------- */
+  /* ---------- Paso 1: estilo ---------- */
   const contEstilos = $('#estilos');
   estilos.forEach(e => {
     const lab = document.createElement('label');
@@ -288,40 +345,40 @@ function initSimulador(){
     contEstilos.appendChild(lab);
   });
 
+  /* El graffiti solo se usa en exterior y no en todos los estilos: si no se puede, se pasa a pintura */
+  const sinSpray = () => lugar() !== 'exterior' || tarifa(estiloActual(), 'spray') == null;
   const reglas = () => {
-    let aviso = '';
-    if (lugar() === 'interior' && S.tecnica === 'spray') {
-      S.tecnica = 'pintura';
-      aviso = 'En interior se pinta siempre con pintura, así que he cambiado la técnica.';
-    }
-    if (!tarifa(estiloActual(), S.tecnica)) {
-      S.estilo = estilos.find(x => tarifa(x, S.tecnica)).id;
-      aviso = (aviso ? aviso + ' ' : '') + 'Ese estilo no se hace con esta técnica, así que he elegido otro.';
-    }
-    $('#notice').textContent = aviso;
+    if (sinSpray() && S.tecnica === 'spray') S.tecnica = 'pintura';
   };
 
   const pintarControles = () => {
     $$('input[name=escena]').forEach(r => r.checked = r.value === S.escena);
     $$('input[name=tecnica]').forEach(r => {
       r.checked = r.value === S.tecnica;
-      if (r.value === 'spray') r.disabled = lugar() === 'interior';
+      if (r.value === 'spray') r.disabled = sinSpray();
     });
-    $('#hint-tecnica').textContent = lugar() === 'interior'
-      ? 'En interior pinto siempre con pintura.'
-      : 'El graffiti (spray) solo se usa en exteriores.';
+    $('#hint-tecnica').textContent = {interior: 'En interior pinto siempre con pintura.', cristal: 'En cristales pinto siempre con pintura.'}[lugar()]
+      || (sinSpray() ? 'El estilo «' + estiloActual().nombre + '» se pinta siempre con pintura.' : 'El graffiti (spray) solo se usa en exteriores.');
+    $$('input[name=ubicacion]').forEach(r => r.checked = r.value === S.ubicacion);
     $$('.sq', contEstilos).forEach(lab => {
       const e = estilos.find(x => x.id === lab.dataset.id);
-      const t = tarifa(e, S.tecnica);
-      const inp = $('input', lab);
-      inp.checked = S.estilo === e.id;
-      inp.disabled = !t;
-      $('small', lab).textContent = t ? e.desc : 'Solo con pintura';
+      $('input', lab).checked = S.estilo === e.id;
+      $('small', lab).textContent = e.desc;
     });
     pintarTools();
   };
 
-  /* ---------- Paso 3: tamaño ---------- */
+  /* ---------- Paso 3: ubicación ---------- */
+  const contUbic = $('#ubicaciones');
+  C.ubicaciones.forEach(u => {
+    const lab = document.createElement('label');
+    lab.innerHTML = '<input type="radio" name="ubicacion"><span></span>';
+    $('input', lab).value = u.id;
+    $('span', lab).textContent = u.nombre;
+    contUbic.appendChild(lab);
+  });
+
+  /* ---------- Medidas ---------- */
   const pintarMedidas = () => {
     const crece = esc_().crece, p = geo().pared, a = num(S.ancho), h = num(S.alto);
     const maxW = crece ? 12 : p.w, maxH = crece ? L.alturaMaxima : p.h;
@@ -334,23 +391,31 @@ function initSimulador(){
     if (document.activeElement !== ih) ih.value = S.alto;
     $('#sim-max').textContent = crece
       ? 'La persiana se adapta a las medidas que pongas.'
-      : 'Esta pared mide ' + nf.format(I.ancho) + ' × ' + nf.format(I.alto) + ' m.';
+      : 'Esta pared mide ' + nf.format(p.w) + ' × ' + nf.format(p.h) + ' m.';
     $('#sim-toda').hidden = !!crece;
     $('#area-out').textContent = a > 0 && h > 0 ? '= ' + nf.format(round2(a * h)) + ' m²' : '';
     $('#sim-aviso-tam').textContent = !crece && (a > p.w + .001 || h > p.h + .001)
       ? 'Tu mural es más grande que esta pared de ejemplo, así que aquí se ve recortado. El precio sí está calculado con tus medidas.' : '';
   };
 
-  /* ---------- Paso 4: presupuesto ---------- */
+  /* ---------- Paso 4: presupuesto ----------
+     sin materiales = m² × precio (en cristales, m² × precio del cristal), con un mínimo;
+     más de 20 m²: descuento; con materiales = sin materiales + 30 %;
+     el suplemento por altura y el plus por desplazamiento van dentro del precio sin decirlo */
   const calcular = () => {
     const ancho = num(S.ancho), alto = num(S.alto);
     if (!(ancho > 0) || !(alto > 0)) return {ok:false, msg:'Escribe el ancho y el alto del mural en metros.'};
     if (alto > L.alturaMaxima) return {ok:false, msg:'Por ahora no hago murales de más de ' + L.alturaMaxima + ' m de altura desde el suelo. Escríbeme y vemos si se puede resolver de otra forma.'};
-    const area = ancho * alto, e = estiloActual(), t = tarifa(e, S.tecnica);
-    let sin = t.m2 * area, con = t.mat * area;
-    if (C.minimoMural > 0) { sin = Math.max(sin, C.minimoMural); con = Math.max(con, C.minimoMural); }
+    const area = ancho * alto, e = estiloActual();
+    let sin = Math.max(area * (lugar() === 'cristal' ? PR.cristal.m2 : tarifa(e, S.tecnica)), PR.minimo);
+    const descuento = area > PR.descuento.desdeM2;
+    if (descuento) sin *= 1 - PR.descuento.porcentaje;
+    let con = sin * (1 + PR.materiales);
+    if (alto > PR.altura.desde) { sin += PR.altura.sinMateriales; con += PR.altura.conMateriales; }
+    const plus = ubicacionActual().plus;
+    sin += plus; con += plus;
     const dias = area / (e.m2dia * (S.tecnica === 'spray' ? C.rendimientoSpray : 1));
-    return {ok:true, ancho, alto, area, e, t, sin, con, dias};
+    return {ok:true, ancho, alto, area, e, sin, con, dias, descuento};
   };
   const textoDias = d => {
     if (d <= .6) return 'Menos de un día';
@@ -360,27 +425,30 @@ function initSimulador(){
   };
   const codigo = () => {
     let h = 0;
-    for (const ch of [S.escena, S.estilo, S.ancho, S.alto, S.tecnica].join('|')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    for (const ch of [S.escena, S.estilo, S.ancho, S.alto, S.tecnica, S.ubicacion].join('|')) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
     return 'MA-' + (h % 46656).toString(36).toUpperCase().padStart(3, '0');
   };
 
   const pintarResultado = () => {
     const r = calcular(), box = $('#resultado');
     el.chip.innerHTML = r.ok ? '<small>Desde</small> ' + eur(r.sin) + ' <span>· ' + nf.format(round2(r.area)) + ' m²</span>' : 'Calcula tu precio';
+    $('#sim-res-btn').textContent = S.simulador ? 'Guardar la imagen del simulador' : 'Ver cómo queda en el simulador';
     if (!r.ok) {
-      box.innerHTML = '<p class="error">' + r.msg + '</p><div class="res-actions"><a class="btn" href="' + wa('Hola María, tengo una consulta sobre un mural.') + '" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>';
+      box.innerHTML = '<div class="ticket"><p class="error">' + r.msg + '</p></div>';
+      $('#sim-enviar-wa', document).href = wa('Hola María, tengo una consulta sobre un mural.');
+      $('#sim-enviar-mail', document).href = mailto('Consulta sobre un mural', 'Hola María, tengo una consulta sobre un mural.');
       return;
     }
-    const mu = muralActual(), dondeTxt = esc_().nombre + ' · ' + (lugar() === 'interior' ? 'interior' : 'exterior');
-    const avisos = [];
-    if (r.t.plantilla) avisos.push('El coste de la plantilla del logotipo se presupuesta aparte.');
-    if (r.alto > L.alturaSinAndamio) avisos.push('Con más de ' + L.alturaSinAndamio + ' m de altura hace falta andamio, que se añade aparte.');
+    const mu = muralActual(), dondeTxt = esc_().nombre, ubic = ubicacionActual().nombre;
+    const dto = 'Más de ' + PR.descuento.desdeM2 + ' m²: ' + Math.round(PR.descuento.porcentaje * 100) + ' % de descuento aplicado';
+    const avisos = r.descuento ? [dto + '.'] : [];
     const msg = [
       'Hola María, he calculado un presupuesto en tu web.',
       '• Dónde: ' + dondeTxt,
+      '• Ubicación: ' + ubic,
       '• Estilo: ' + r.e.nombre + ' (como el mural «' + mu.nombre + '»)',
       '• Técnica: ' + nombreTec[S.tecnica],
-      '• Medidas: ' + nf.format(r.ancho) + ' × ' + nf.format(r.alto) + ' m (' + nf.format(round2(r.area)) + ' m²)',
+      '• Medidas: ' + nf.format(r.ancho) + ' × ' + nf.format(r.alto) + ' m (' + nf.format(round2(r.area)) + ' m²)' + (r.descuento ? ' · ' + dto.toLowerCase() : ''),
       'Presupuesto orientativo: ' + eur(r.sin) + ' sin materiales / ' + eur(r.con) + ' con materiales (IVA no incluido). Diseño ' + codigo() + '.',
       'Me gustaría un presupuesto cerrado. Te paso fotos de la pared, su estado, las medidas exactas y el municipio:'
     ].join('\n');
@@ -393,26 +461,31 @@ function initSimulador(){
           '<div><dt>Estilo</dt><dd>' + r.e.nombre + '<br><small>como «' + mu.nombre + '»</small></dd></div>' +
           '<div><dt>Técnica</dt><dd>' + nombreTec[S.tecnica] + '</dd></div>' +
           '<div><dt>Medidas</dt><dd>' + nf.format(r.ancho) + ' × ' + nf.format(r.alto) + ' m = ' + nf.format(round2(r.area)) + ' m²</dd></div>' +
+          '<div><dt>Ubicación</dt><dd>' + ubic + '</dd></div>' +
           '<div><dt>Trabajo</dt><dd>' + textoDias(r.dias) + '</dd></div>' +
         '</dl>' +
         '<div class="t-tot"><div><span>Sin materiales</span><strong>' + eur(r.sin) + '</strong></div><div><span>Con materiales</span><strong>' + eur(r.con) + '</strong></div></div>' +
         '<p class="iva">IVA no incluido. Cifra orientativa y no vinculante.</p>' +
         (avisos.length ? '<ul class="avisos">' + avisos.map(a => '<li>' + a + '</li>').join('') + '</ul>' : '') +
-      '</div>' +
-      '<div class="res-actions">' +
-        '<a class="btn" href="' + wa(msg) + '" target="_blank" rel="noopener">Enviar este diseño por WhatsApp</a>' +
-        (S.simulador ? '<button type="button" class="btn btn-ghost" data-tool-img>Guardar la imagen del simulador</button>'
-          : '<button type="button" class="btn btn-ghost" data-ver-sim>Ver cómo queda en el simulador</button>') +
-        '<a class="btn btn-ghost" href="' + mailto('Presupuesto de mural', msg) + '">Enviar por correo</a>' +
-      '</div>' +
-      '<p class="fine">Para darte un presupuesto cerrado necesito fotos, estado de la pared, las medidas exactas y el municipio de realización. El tiempo de trabajo es aproximado.</p>';
-    const bImg = $('[data-tool-img]', box), bSim = $('[data-ver-sim]', box);
-    if (bImg) bImg.addEventListener('click', ev => compartirImagen(ev.currentTarget));
-    if (bSim) bSim.addEventListener('click', () => { ponerModo(true); root.scrollIntoView({behavior: sinMovimiento ? 'auto' : 'smooth'}); });
+      '</div>';
+    $('#sim-enviar-wa', document).href = wa(msg);
+    $('#sim-enviar-mail', document).href = mailto('Presupuesto de mural', msg);
   };
 
   /* ---------- Imagen para guardar o compartir ---------- */
   const cargar = src => new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = src; });
+  /* Bordes que se desvanecen: f = parte del ancho y del alto que se difumina en cada lado */
+  const difuminar = (cv, f) => {
+    const x = cv.getContext('2d');
+    x.save();
+    x.globalCompositeOperation = 'destination-in'; x.globalAlpha = 1; x.filter = 'none';
+    [[cv.width, 0], [0, cv.height]].forEach(([gx, gy]) => {
+      const g = x.createLinearGradient(0, 0, gx, gy);
+      g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(f, '#000'); g.addColorStop(1 - f, '#000'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = g; x.fillRect(0, 0, cv.width, cv.height);
+    });
+    x.restore();
+  };
   const dibujarCover = (ctx, img, x, y, w, h) => {
     const s = Math.max(w / img.naturalWidth, h / img.naturalHeight), sw = w / s, sh = h / s;
     ctx.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, x, y, w, h);
@@ -431,7 +504,7 @@ function initSimulador(){
   };
   const generarImagen = async () => {
     const g = geo(), p = g.pared, r = medidas(g), e = esc_();
-    const W = Math.round(Math.min(1800, 1024 * (S.escena === 'persiana' ? g.W / persiana(P.ancho, P.alto).W : 1))), H = Math.round(W * g.H / g.W);
+    const W = Math.round(Math.min(1800, 1024 * (e.foto ? 1 : g.W / persiana(P.ancho, P.alto).W))), H = Math.round(W * g.H / g.W);
     const k = W / g.W, kH = H / g.H;
     const foto = await cargar(e.img), mural = await cargar(IMG[muralActual().img]);
     const base = document.createElement('canvas');
@@ -441,24 +514,44 @@ function initSimulador(){
     cv.width = W; cv.height = H + 56;
     const ctx = cv.getContext('2d');
     ctx.drawImage(base, 0, 0);
-    const mx = (p.x + r.x) * k, my = (p.y + r.y) * kH, mw = r.w * k, mh = r.h * kH;
-    ctx.save();
-    ctx.beginPath(); ctx.rect(mx, my, mw, mh); ctx.clip();
-    dibujarCover(ctx, mural, mx, my, mw, mh);
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.globalAlpha = e.texOp;
-    ctx.filter = e.tex;
-    ctx.drawImage(base, 0, 0);
-    ctx.restore();
-    if (S.escena === 'interior') {
+    const mx = (p.x + r.x) * k, my = (p.y + r.y) * kH, mw = Math.round(r.w * k), mh = Math.round(r.h * kH);
+    const mc = document.createElement('canvas');
+    mc.width = mw; mc.height = mh;
+    const m2 = mc.getContext('2d');
+    if (e.ajuste === 'entero') {
+      // fondo pintado del color medio del mural y encima el mural completo con los bordes suaves
+      if (e.lugar !== 'cristal') {   // en el cristal no hay fondo pintado: alrededor se ve el vidrio
+        m2.globalAlpha = .45;
+        m2.fillStyle = colorMedio(mural);
+        m2.fillRect(0, 0, mw, mh);
+        m2.globalAlpha = 1;
+      }
+      const d = dentro({w: mw, h: mh}, mural), ic = document.createElement('canvas');
+      ic.width = Math.round(d.w); ic.height = Math.round(d.h);
+      ic.getContext('2d').drawImage(mural, 0, 0, ic.width, ic.height);
+      difuminar(ic, .12);
+      m2.drawImage(ic, d.x, d.y);
+    } else dibujarCover(m2, mural, 0, 0, mw, mh);
+    m2.globalCompositeOperation = 'multiply';
+    m2.globalAlpha = e.texOp;
+    m2.filter = e.tex;
+    m2.drawImage(base, -mx, -my);
+    if (e.ajuste === 'entero') difuminar(mc, .06);
+    ctx.drawImage(mc, mx, my);
+    if (e.foto) {
+      const f = e.foto;
       ctx.save();
-      ctx.scale(W / 1024, H / 1020);
-      ctx.beginPath();
-      INTERIOR_FRENTE.forEach(pts => pts.split(' ').forEach((pt, i) => { const [x, y] = pt.split(',').map(Number); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }));
-      ctx.clip();
-      ctx.drawImage(foto, 0, 0, 1024, 1020);
+      ctx.scale(W / f.w, H / f.h);
+      if (f.poligonos.length) {
+        ctx.save();
+        ctx.beginPath();
+        f.poligonos.forEach(pts => pts.split(' ').forEach((pt, i) => { const [x, y] = pt.split(',').map(Number); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); }));
+        ctx.clip();
+        ctx.drawImage(foto, 0, 0, f.w, f.h);
+        ctx.restore();
+      }
+      for (const c of f.recortes) ctx.drawImage(await cargar(c.img), c.x, c.y, c.w, c.h);
       ctx.restore();
-      ctx.drawImage(await cargar(IMG.sim_interior_planta), PLANTA.x * W / 1024, PLANTA.y * H / 1020, PLANTA.w * W / 1024, PLANTA.h * H / 1020);
     }
     if (S.persona) {
       const per = await cargar(IMG.sim_persona), ph = 1.7 * kH, pw = 1.7 * PERSONA_PROP * k;
@@ -503,7 +596,7 @@ function initSimulador(){
       reglas(); montarEscena(); pintarControles(); pintarMedidas(); colocar(true);
     } else if (n === 'tecnica' || n === 'estilo') {
       S[n] = t.value; reglas(); pintarControles(); colocar(true);
-    }
+    } else if (n === 'ubicacion') S.ubicacion = t.value;
     pintarResultado();
   });
   form.addEventListener('input', ev => {
@@ -521,6 +614,6 @@ function initSimulador(){
   });
   form.addEventListener('submit', ev => ev.preventDefault());
 
-  reglas(); montarEscena(); pintarControles(); ponerModo(false);
+  reglas(); montarEscena(); pintarControles(); irPaso(1); ponerModo(false);
 }
 initSimulador();

@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:wght@400;500;600;700&family=Jost:wght@300;400;500;600&family=Mrs+Saint+Delafield&display=swap" rel="stylesheet">
-<link rel="preload" as="image" href="/img/portada-poster.jpg">
+<link rel="preload" as="image" href="/img/portada-fondo.jpg">
 <link rel="stylesheet" href="/assets/styles.css">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"LocalBusiness","name":"Murales Anilom","description":"Pintura mural de interior y exterior","telephone":"+34623718154","email":"murales.anilom@gmail.com","url":"https://www.muralesanilom.com","image":"https://www.muralesanilom.com/img/og.jpg","sameAs":["https://www.instagram.com/murales.anilom"],"areaServed":["Granada","Sevilla","Málaga","Jaén"]}
@@ -57,6 +57,7 @@
       <span class="script hero-sign" aria-hidden="true">María Anilom</span>
     </div>
     <figure class="hero-img">
+      <img class="hero-fondo" src="/img/portada-fondo.jpg" alt="" width="1920" height="1497">
       <video src="/video/portada.mp4" poster="/img/portada-poster.jpg" autoplay muted loop playsinline preload="auto" aria-label="Recorrido por el pub Malecón de Martos, pintado entero a mano: paredes, barra y fachada"></video>
       <figcaption class="hero-card"><strong>Pub Malecón</strong>Todo el local pintado a mano, fachada incluida · Martos, 2026</figcaption>
     </figure>
@@ -74,8 +75,8 @@
 <section class="section" id="sobre">
   <div class="wrap about-grid">
     <figure class="about-photo">
-      <img src="/img/malecon1.jpg" loading="lazy" decoding="async" alt="Retrato pintado de una mujer con pañuelo de la bandera cubana y un puro, en el pub Malecón de Martos">
-      <figcaption>Retrato del pub Malecón, Martos · 2026</figcaption>
+      <img src="/img/sobre-murales-anilom.jpg" loading="lazy" decoding="async" alt="María, subida a una escalera, pintando montañas en tinta negra en un mural de paisaje oriental">
+      <figcaption>Proceso de un mural 2025</figcaption>
     </figure>
     <div class="about-text">
       <img class="isotipo" src="/img/isotipo.webp" loading="lazy" decoding="async" alt="" width="84" height="84">
@@ -146,14 +147,9 @@
 </section>
 <section class="section" id="precio">
   <div class="wrap">
-    <div class="section-head">
+    <div class="section-head section-head-2">
       <h2>Cuánto cuesta un mural</h2>
       <p class="lead">El precio depende de los metros cuadrados, de la técnica y de cuánto detalle lleva. Elige el estilo que más se parece a lo que buscas y calcula una cifra orientativa.</p>
-      <label class="sim-toggle">
-        <input type="checkbox" role="switch" id="sim-modo">
-        <span class="sim-switch" aria-hidden="true"></span>
-        <span class="sim-toggle-txt"><strong>Probar en el simulador</strong><small>Mira cómo queda el mural en una persiana o en una pared de casa</small></span>
-      </label>
     </div>
     <div class="sim modo-calc" id="simulador">
       <div class="sim-vista">
@@ -168,21 +164,25 @@
 
       <form class="sim-panel calc-form" id="sim-form" autocomplete="off" novalidate>
         <nav class="sim-steps" aria-label="Pasos">
-          <button type="button" data-ir="1"><b>1</b>Dónde</button>
-          <button type="button" data-ir="2"><b>2</b>Estilo</button>
-          <button type="button" data-ir="3"><b>3</b>Tamaño</button>
-          <button type="button" data-ir="4"><b>4</b>Precio</button>
+          <button type="button" data-ir="1"><b>1</b><span>Estilo</span></button>
+          <button type="button" data-ir="2"><b>2</b><span>Tamaño y localización</span></button>
+          <button type="button" data-ir="3"><b>3</b><span>Ubicación</span></button>
         </nav>
 
         <div class="sim-paso" data-paso="1">
+          <p class="sim-paso-n">Paso 1 de 3</p>
           <fieldset>
-            <legend>¿Dónde va el mural?</legend>
-            <div class="sim-escenas" id="sim-escenas"></div>
+            <legend>Estilo</legend>
+            <div class="estilos-cuadros sim-estilos" id="estilos"></div>
           </fieldset>
-          <div class="sim-nav"><button type="button" class="btn" data-ir="2">Siguiente: el estilo</button></div>
         </div>
 
         <div class="sim-paso" data-paso="2" hidden>
+          <p class="sim-paso-n">Paso 2 de 3</p>
+          <fieldset>
+            <legend>Tamaño y localización</legend>
+            <div class="sim-escenas" id="sim-escenas"></div>
+          </fieldset>
           <fieldset>
             <legend class="small">Técnica</legend>
             <div class="seg">
@@ -192,36 +192,53 @@
             <p class="hint" id="hint-tecnica"></p>
           </fieldset>
           <fieldset>
-            <legend>Estilo</legend>
-            <div class="estilos-cuadros sim-estilos" id="estilos"></div>
-            <p class="notice" id="notice" role="status"></p>
-          </fieldset>
-          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="1">Atrás</button><button type="button" class="btn" data-ir="3">Siguiente: el tamaño</button></div>
-        </div>
-
-        <div class="sim-paso" data-paso="3" hidden>
-          <fieldset>
-            <legend>Tamaño del mural</legend>
+            <legend class="small">Medidas del mural</legend>
             <div class="sim-rango"><label for="sim-rango-ancho">Ancho</label><input type="range" id="sim-rango-ancho" min="0.5" max="3" step="0.1"></div>
             <div class="sim-rango"><label for="sim-rango-alto">Alto</label><input type="range" id="sim-rango-alto" min="0.5" max="2.4" step="0.1"></div>
             <div class="medidas">
-              <div class="field"><label for="ancho">Ancho (m)</label><input type="text" id="ancho" name="ancho" inputmode="decimal"></div>
-              <span class="times" aria-hidden="true">×</span>
-              <div class="field"><label for="alto">Alto (m)</label><input type="text" id="alto" name="alto" inputmode="decimal"></div>
+              <div class="field igual"><label for="ancho">Ancho =</label><input type="text" id="ancho" name="ancho" inputmode="decimal" aria-describedby="unidad"><span id="unidad">m</span></div>
+              <div class="field igual"><label for="alto">Alto =</label><input type="text" id="alto" name="alto" inputmode="decimal" aria-describedby="unidad"><span>m</span></div>
               <span class="area-out" id="area-out"></span>
             </div>
             <p class="hint"><span id="sim-max"></span> <button type="button" class="sim-link" id="sim-toda">Pintar la pared entera</button></p>
             <p class="notice" id="sim-aviso-tam" role="status"></p>
           </fieldset>
-          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="2">Atrás</button><button type="button" class="btn" data-ir="4">Ver mi presupuesto</button></div>
         </div>
 
-        <div class="sim-paso" data-paso="4" hidden>
-          <div id="resultado" aria-live="polite"></div>
-          <div class="sim-nav"><button type="button" class="btn btn-ghost" data-ir="1">Empezar otro diseño</button></div>
+        <div class="sim-paso" data-paso="3" hidden>
+          <p class="sim-paso-n">Paso 3 de 3</p>
+          <fieldset>
+            <legend>Ubicación</legend>
+            <div class="sim-ubic" id="ubicaciones"></div>
+          </fieldset>
+        </div>
+
+        <div class="sim-pie">
+          <label class="sim-toggle">
+            <input type="checkbox" role="switch" id="sim-modo">
+            <span class="sim-switch" aria-hidden="true"></span>
+            <span class="sim-toggle-txt"><strong>Probar en el simulador</strong><small>Mira cómo queda el mural en una persiana, una fachada, una pared de casa o un cristal</small></span>
+          </label>
+          <div class="sim-nav">
+            <button type="button" class="btn btn-ghost" id="sim-ant">Anterior</button>
+            <button type="button" class="btn" id="sim-sig">Siguiente: Tamaño</button>
+          </div>
         </div>
       </form>
+
+      <aside class="sim-res" aria-label="Tu presupuesto">
+        <div id="resultado" aria-live="polite"></div>
+        <p class="fine">Para darte un presupuesto cerrado necesito fotos, estado de la pared, las medidas exactas y el municipio de realización. El tiempo de trabajo es aproximado.</p>
+        <button type="button" class="btn btn-ghost sim-res-btn" id="sim-res-btn">Ver cómo queda en el simulador</button>
+      </aside>
     </div>
+
+    <dialog class="sim-enviar" id="sim-enviar" aria-labelledby="sim-enviar-t">
+      <form method="dialog"><button class="sim-enviar-x" aria-label="Cerrar">×</button></form>
+      <p id="sim-enviar-t">¿Te gustaría continuar? Envía tu presupuesto ahora</p>
+      <a class="btn" id="sim-enviar-wa" href="#" target="_blank" rel="noopener">Enviar este diseño por WhatsApp</a>
+      <a class="btn btn-ghost" id="sim-enviar-mail" href="#">Enviar por correo</a>
+    </dialog>
   </div>
 </section>
 <section class="contact-dark">

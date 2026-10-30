@@ -17,26 +17,40 @@ const CONFIG = {
 
   /* ---------- LÍMITES DE ALTURA (en metros, desde el suelo) ---------- */
   limites: {
-    alturaSinAndamio: 4,    // hasta aquí, sin plus de andamio
     alturaMaxima: 6         // por encima de esta altura no se hace el mural
   },
 
-  /* Importe mínimo por mural (sin IVA). Pon 0 para no usar mínimo. */
-  minimoMural: 0,
+  /* ---------- REGLAS DEL PRESUPUESTO (sin IVA) ---------- */
+  presupuesto: {
+    minimo: 100,              // importe mínimo de un mural sin materiales
+    materiales: 0.30,         // con materiales = precio sin materiales + 30 %
+    descuento: { desdeM2: 20, porcentaje: 0.10 },              // más de 20 m²: 10 % de descuento
+    altura: { desde: 3, sinMateriales: 50, conMateriales: 300 }, // más de 3 m de alto: suplemento (no se enseña, va dentro del precio)
+    cristal: { m2: 40 }       // en la localización "Cristales": precio por m², sea cual sea el estilo (con el mismo mínimo)
+  },
 
-  /* ---------- PRECIOS POR m² (sin IVA) ----------
-     m2  = precio sin materiales
-     mat = precio con materiales (orientativo)
-     null en "mat" = el material es la plantilla y se presupuesta aparte
-     null en pintura / spray = esa técnica no está disponible para ese estilo
+  /* ---------- UBICACIÓN ----------
+     plus = lo que se suma al precio por desplazamiento (no se enseña en el selector, solo va dentro del precio final). */
+  ubicaciones: [
+    { id: 'sevilla',  nombre: 'Sevilla capital', plus: 0 },
+    { id: 'granada',  nombre: 'Granada capital', plus: 0 },
+    { id: 'cerca',    nombre: 'Un pueblo a menos de 50 km de Sevilla o Granada', plus: 0 },
+    { id: 'jaen',     nombre: 'Jaén', plus: 30 },
+    { id: 'malaga',   nombre: 'Málaga', plus: 30 },
+    { id: 'lejos',    nombre: 'Un pueblo a más de 50 km de Sevilla o Granada', plus: 30 }
+  ],
+
+  /* ---------- PRECIOS POR m² SIN MATERIALES (sin IVA) ----------
+     null = esa técnica no está disponible para ese estilo
      (La web no muestra esta tabla: se usa solo para calcular.) */
   precios: {
-    fondo:     { pintura: { m2: 10, mat: 15 }, spray: { m2: 20, mat: 30 } },
-    logotipo:  { pintura: { m2: 30, mat: null }, spray: { m2: 30, mat: null } },
-    grafico:   { pintura: { m2: 50, mat: 55 }, spray: { m2: 50, mat: 55 } },
-    ilustrado: { pintura: { m2: 62, mat: 70 }, spray: { m2: 62, mat: 70 } },
-    realista:  { pintura: { m2: 72, mat: 80 }, spray: { m2: 72, mat: 80 } },
-    disney:    { pintura: { m2: 45, mat: 55 }, spray: null }
+    fondo:     { pintura: 10, spray: 20 },
+    logotipo:  { pintura: 30, spray: 30 },
+    grafico:   { pintura: 50, spray: 50 },
+    ilustrado: { pintura: 62, spray: 62 },
+    realista:  { pintura: 72, spray: 72 },
+    disney:    { pintura: 45, spray: null },
+    cristal:   { pintura: 40, spray: null }
   },
 
   /* ---------- ESTILOS DE LA CALCULADORA ----------
@@ -44,8 +58,8 @@ const CONFIG = {
      "ejemplo" es la foto que se enseña como ejemplo del estilo.
      "murales" son los murales que enseña el simulador para ese estilo
      (img = recorte del mural en /img/simulador/, nombre = cómo se llama,
-     para = 'exterior' o 'interior': en la persiana sale el de exterior y en la pared de casa el de interior;
-     sin "para" vale para los dos sitios. Se enseña el primero de la lista que encaje).
+     para = dónde se enseña: 'persiana', 'exterior' (persiana y pared exterior), 'interior' o 'cristal';
+     sin "para" vale para todos los sitios. Se enseña el primero de la lista que encaje).
      "m2dia" = metros cuadrados que se pintan, más o menos, en un día de trabajo
      (se usa para calcular cuántos días se tarda). */
   estilosCalculadora: [
@@ -57,13 +71,16 @@ const CONFIG = {
       murales: [ { img: 'sim_mapa2', nombre: 'Mapamundi', para: 'interior' }, { img: 'sim_malecon7', nombre: 'Un pedacito de Cuba', para: 'interior' } ] },
     { id: 'ilustrado', nombre: 'Ilustrado',             usa: ['ilustrado'],         ejemplo: 'cerezos',
       desc: 'Dibujo con detalle y color.', m2dia: 2.5,
-      murales: [ { img: 'sim_gourmet1', nombre: 'Café y olivos', para: 'exterior' }, { img: 'sim_gourmet3', nombre: 'Viñedo', para: 'exterior' }, { img: 'sim_cerezos', nombre: 'Cerezos en flor', para: 'interior' } ] },
+      murales: [ { img: 'sim_cerezos', nombre: 'Cerezos en flor', para: 'interior' }, { img: 'sim_gourmet2', nombre: 'Gourmet Sevilla: el vino', para: 'persiana' }, { img: 'sim_gourmet1', nombre: 'Café y olivos', para: 'exterior' } ] },
     { id: 'realista',  nombre: 'Realista',              usa: ['realista'],          ejemplo: 'malecon1',
       desc: 'Retratos y escenas con volumen.', m2dia: 1.5,
       murales: [ { img: 'sim_malecon1', nombre: 'Retrato cubano' }, { img: 'sim_jaen', nombre: 'Selva con cascada', para: 'exterior' }, { img: 'sim_playa', nombre: 'Ventana a la playa', para: 'interior' } ] },
     { id: 'disney',    nombre: 'Dibujos estilo Disney', usa: ['disney'],            ejemplo: 'enanitos',
       desc: 'Personajes de dibujos animados.', m2dia: 3,
-      murales: [ { img: 'sim_enanitos', nombre: 'Los siete enanitos' }, { img: 'sim_dayara', nombre: 'Kiosko Dayara', para: 'exterior' } ] }
+      murales: [ { img: 'sim_enanitos', nombre: 'Los siete enanitos' }, { img: 'sim_dayara', nombre: 'Kiosko Dayara', para: 'exterior' } ] },
+    { id: 'cristal',   nombre: 'Pintura en cristal',    usa: ['cristal'],           ejemplo: 'cristal_navidad',
+      desc: 'Dibujos pintados sobre vidrio.', m2dia: 4,
+      murales: [ { img: 'sim_cristal_navidad', nombre: 'Escaparate de Navidad' } ] }
   ],
 
   /* El graffiti (spray) cunde más: los m²/día de arriba se multiplican por esto. */
@@ -73,7 +90,9 @@ const CONFIG = {
      Medidas reales (en metros) de las paredes de ejemplo del simulador. */
   simulador: {
     persiana: { ancho: 3, alto: 2.4 },     // la persiana de la foto local.webp (crece si el mural es más grande)
-    interior: { ancho: 3.3, alto: 2.7 }    // la pared del fondo de la foto interior.webp
+    exterior: { ancho: 4.75, alto: 5.25 }, // la fachada de la foto pared-exterior.webp
+    interior: { ancho: 3.3, alto: 2.7 },   // la pared del fondo de la foto interior.webp
+    cristal:  { ancho: 3.16, alto: 2.11 }  // el escaparate del dibujo cristal.svg
   },
 
   /* ---------- ENCUADRE DE LAS FOTOS ----------
