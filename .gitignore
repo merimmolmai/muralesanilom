@@ -1,2 +1,5 @@
 murales-anilom-web.zip
 murales-anilom-web-un-solo-archivo.html
+# Vídeos originales: pesan mucho y la web usa las copias comprimidas de video/
+img/Nuevo/*.mp4
+*.xml

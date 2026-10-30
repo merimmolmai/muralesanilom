@@ -218,8 +218,10 @@ function initSimulador(){
     cv.width = cv.height = 1;
     const x = cv.getContext('2d');
     x.drawImage(img, 0, 0, 1, 1);
-    const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
-    return 'rgb(' + r + ',' + g + ',' + b + ')';
+    try {
+      const [r, g, b] = x.getImageData(0, 0, 1, 1).data;
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    } catch (err) { return '#e9e4dc'; }   // abriendo los archivos en el ordenador el navegador no deja leer la foto
   };
   el.color.addEventListener('load', () => { el.relleno.style.backgroundColor = colorMedio(el.color); colocar(); });
 

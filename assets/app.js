@@ -25,6 +25,10 @@ function init(){
   const nav = $('#nav'), menuBtn = $('.menu-btn');
   const pagina = document.body.dataset.page;
   $$('[data-nav]').forEach(a => { if (a.dataset.nav === pagina) a.setAttribute('aria-current', 'page'); });
+  if (location.protocol === 'file:') $$('a[href]').forEach(a => {
+    const h = a.getAttribute('href');
+    if (h[0] !== '#' && !/^[a-z]+:/i.test(h) && /(^|\/)(#.*)?$/.test(h)) a.setAttribute('href', h.replace(/(#.*)?$/, 'index.html$1'));
+  });
   menuBtn.addEventListener('click', () => {
     const open = nav.classList.toggle('open');
     menuBtn.setAttribute('aria-expanded', open);
@@ -119,7 +123,7 @@ function init(){
       p.fotos.forEach(f => {
         if (f.video) {
           const fig = document.createElement('figure');
-          fig.className = 'tile video';
+          fig.className = 'tile video' + (f.horizontal ? ' horizontal' : '');
           const v = document.createElement('video');
           v.controls = true; v.muted = true; v.playsInline = true; v.preload = 'none';
           v.setAttribute('aria-label', f.alt);
