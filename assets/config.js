@@ -11,7 +11,7 @@ const CONFIG = {
     telefonoLink: '+34623718154',
     email: 'murales.anilom@gmail.com',
     instagram: 'murales.anilom',
-    web: 'www.muralesanilom.com',
+    web: 'muralesanilom.com',
     webArte: 'www.m-anilom.art'
   },
 

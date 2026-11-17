@@ -99,6 +99,16 @@ function init(){
     });
   }
 
+  /* ---------- Galerías escritas en la página (páginas de ciudad) ---------- */
+  $$('[data-galeria]').forEach(g => {
+    const botones = $$('.tile button', g);
+    const items = botones.map(b => {
+      const im = $('img', b), p = b.closest('.proyecto');
+      return {src: im.src, alt: im.alt, cap: p ? $('h3', p).textContent + ' · ' + $('.lugar', p).textContent : im.alt};
+    });
+    botones.forEach((b, i) => b.addEventListener('click', e => abrir(items, i, e.currentTarget)));
+  });
+
   /* ---------- Proyectos ---------- */
   const lp = $('#proyectos-lista');
   if (lp) {
